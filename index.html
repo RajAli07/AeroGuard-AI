@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AeroGuard AI Simulator</title>
+  <style>
+    :root {
+      --bg: #0e1319;
+      --pn: #171e27;
+      --ln: #26313f;
+      --tx: #e8eef5;
+      --mu: #8da0b5;
+      --ok: #2fd5a6;
+      --am: #ffb020;
+      --rd: #ff4d5e;
+      --bl: #3dd6f5
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--tx);
+      font: 14px/1.45 system-ui, Segoe UI, sans-serif
+    }
+
+    .num {
+      font-family: ui-monospace, Consolas, monospace
+    }
+
+    header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--ln)
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 20px
+    }
+
+    header p {
+      margin: 2px 0 0;
+      color: var(--mu);
+      max-width: 78ch
+    }
+
+    .g {
+      display: grid;
+      grid-template-columns: 290px 1fr 330px;
+      gap: 14px;
+      padding: 14px 20px
+    }
+
+    @media(max-width:1000px) {
+      .g {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .p {
+      background: var(--pn);
+      border: 1px solid var(--ln);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 14px
+    }
+
+    .p h2 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      color: var(--mu);
+      font-weight: 600
+    }
+
+    canvas {
+      width: 100%;
+      display: block
+    }
+
+    button,
+    select {
+      background: #1f2a37;
+      color: var(--tx);
+      border: 1px solid var(--ln);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font: inherit;
+      cursor: pointer
+    }
+
+    button:hover {
+      border-color: var(--bl)
+    }
+
+    button.on {
+      background: var(--bl);
+      color: #06222b;
+      border-color: var(--bl);
+      font-weight: 600
+    }
+
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible {
+      outline: 2px solid var(--bl);
+      outline-offset: 2px
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px
+    }
+
+    .row label {
+      color: var(--mu);
+      display: flex;
+      gap: 5px;
+      align-items: center
+    }
+
+    .dash {
+      background: #050709;
+      border: 2px solid #2b3747;
+      border-radius: 12px;
+      padding: 10px;
+      text-align: center
+    }
+
+    .leds {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      margin-bottom: 6px
+    }
+
+    .leds i {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #25303d
+    }
+
+    #oled {
+      font-size: 26px;
+      color: var(--bl)
+    }
+
+    #st {
+      font-size: 18px;
+      font-weight: 700;
+      text-align: center
+    }
+
+    #hap {
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: #1f2a37;
+      color: var(--mu);
+      margin-top: 8px;
+      text-align: center
+    }
+
+    #log {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-height: 260px;
+      overflow: auto;
+      font-size: 12.5px
+    }
+
+    #log li {
+      padding: 4px 0;
+      border-bottom: 1px solid var(--ln)
+    }
+
+    .am {
+      color: var(--am)
+    }
+
+    .rd {
+      color: var(--rd)
+    }
+
+    .gr {
+      color: var(--ok)
+    }
+
+    .bl {
+      color: var(--bl)
+    }
+
+    #cd {
+      font-size: 44px;
+      text-align: center
+    }
+
+    #ok {
+      width: 100%;
+      padding: 12px;
+      margin-top: 6px;
+      font-weight: 700
+    }
+
+    #msg {
+      font-size: 12px;
+      color: var(--mu);
+      word-break: break-all;
+      margin-top: 8px
+    }
+
+    .m {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px
+    }
+
+    .m div {
+      background: #11171e;
+      border-radius: 6px;
+      padding: 8px
+    }
+
+    .m b {
+      display: block;
+      font-size: 18px
+    }
+
+    .m span {
+      color: var(--mu);
+      font-size: 12px
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+      * {
+        transition: none !important
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>AeroGuard AI simulator</h1>
+    <p>A virtual rider, helmet sensors, on-device risk engine, warnings and crash response, all running in your browser.
+      Pick a ride, watch the risk score react, then try to cancel or ignore the crash alert.</p>
+  </header>
+  <div class="g">
+    <div>
+      <div class="p">
+        <h2>Dynamic risk score</h2><canvas id="g" width="520" height="300"></canvas>
+        <div id="st">Calibrating</div>
+        <div id="ph" class="num" style="text-align:center;color:var(--mu)"></div>
+      </div>
+      <div class="p">
+        <h2>AeroDash display (handlebar)</h2>
+        <div class="dash">
+          <div class="leds"><i id="l1"></i><i id="l2"></i><i id="l3"></i></div>
+          <div id="oled" class="num">DRS 0</div>
+        </div>
+        <div id="hap">Helmet feedback idle</div>
+      </div>
+      <div class="p">
+        <h2>Route</h2><canvas id="mp" width="520" height="300"></canvas>
+      </div>
+    </div>
+    <div>
+      <div class="p">
+        <h2>Ride scenario</h2>
+        <div class="row" id="sc"></div>
+        <div class="row"><button id="pl">Pause</button><button id="rs">Restart</button>
+          <label>Speed <select id="sp">
+              <option value="1">1x</option>
+              <option value="2" selected>2x</option>
+              <option value="5">5x</option>
+              <option value="10">10x</option>
+            </select></label>
+          <label>Sensor noise <input id="nz" type="range" min="0.5" max="3" step="0.1" value="1"></label>
+        </div>
+        <div class="row"><label><input type="checkbox" id="ob" checked> Rider obeys warnings</label><label><input
+              type="checkbox" id="gp" checked> GPS available</label><label><input type="checkbox" id="nt" checked> Phone
+            network</label><label><input type="checkbox" id="sn" checked> Sound</label></div>
+      </div>
+      <div class="p">
+        <h2>Speed (km/h)</h2><canvas id="c1" width="900" height="110"></canvas>
+      </div>
+      <div class="p">
+        <h2>Longitudinal (blue) and lateral (amber) acceleration, g</h2><canvas id="c2" width="900"
+          height="110"></canvas>
+      </div>
+      <div class="p">
+        <h2>Risk score with warning markers</h2><canvas id="c3" width="900" height="130"></canvas>
+      </div>
+      <div class="p">
+        <h2>Ride metrics</h2>
+        <div class="m" id="mt"></div>
+      </div>
+    </div>
+    <div>
+      <div class="p">
+        <h2>Crash response</h2>
+        <div id="ss">Monitoring. No impact detected.</div>
+        <div id="cd" class="num"></div><button id="ok">I am OK, cancel alert</button>
+        <div id="msg"></div>
+      </div>
+      <div class="p">
+        <h2>Event log</h2>
+        <ul id="log"></ul>
+      </div>
+      <div class="p">
+        <h2>How the engine decides</h2>
+        <div style="color:var(--mu);font-size:12.5px">The first 30 s are a calm calibration ride. The engine learns that
+          rider's normal brake, steering and lean statistics, then scores each second by how far the last 5 s deviate,
+          plus speed and lean at speed. Scores are smoothed and use hysteresis to avoid flicker. A crash needs impact
+          above 4 g, roll above 60 degrees and 2 s of stillness. This is a risk detector, not an accident predictor.
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    //ENGINE_START
+    const G = 9.81, clamp = (x, a, b) => Math.max(a, Math.min(b, x)); let seed = 7;
+    const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296 };
+    const gauss = () => { let u = 0; for (let i = 0; i < 6; i++)u += rnd(); return (u - 3) / 0.7071 };
+    const sdv = a => { const m = a.reduce((p, c) => p + c, 0) / a.length; return Math.sqrt(a.reduce((p, c) => p + (c - m) ** 2, 0) / a.length) };
+    const T = [30, 60, 85];
+    function mk(scn, o) {
+      seed = 7; return {
+        scn, o, t: 0, v: 11, x: 0, y: 0, hd: 0, yr: 0, roll: 0, a: 0, ev: { a: 0, until: 0, next: 6 }, down: false, crashT: 0, dropT: -9, dropDone: false,
+        b: { ax: [], ay: [], gz: [], rl: [] }, cal: 30, F: [], mu: null, sd: null, raw: 0, drs: 0, st: 0, gps: { v: 11, age: 0 }, cool: [0, 0, 0, 0], rs: 0, re: 0, mon: 0,
+        C: { s: 'idle', t0: 0, pk: 0, mr: 0, still: 0, cd: 0, lock: 0, net: 0, lastTick: 15 }, sos: null, out: [], stat: { al: [0, 0, 0, 0], tm: [0, 0, 0, 0], fa: 0, sos: 0, dis: 0, deg: false }, n: 0
+      };
+    }
+    function prof(S) {
+      const t = S.t, u = t - S.cal, d = (t >= S.rs && t < S.re) ? .35 : 1;
+      if (u < 0 || S.scn === 'calm' || S.scn === 'drop') return { vT: 11 + 2 * Math.sin(t / 15), ag: .1, wob: .02, f: .3 };
+      if (S.scn === 'crash') return { vT: 14 + 2 * Math.sin(t / 15), ag: .1, wob: .02, f: .3 };
+      if (S.scn === 'aggro') return { vT: 11 + 13 * d, ag: d, wob: .35 * d, f: .8 };
+      return { vT: 11 + 3 * Math.sin(u / 7), ag: Math.min(.7, u / 90) * d, wob: Math.min(.4, .006 * u) * d, f: .5 };
+    }
+    function imu(S) {
+      const n = S.o.noise; let ax = S.a / G + gauss() * .03 * n, ay = S.v * S.yr / G + gauss() * .03 * n, gz = S.yr + gauss() * .02 * n, rl = S.roll * 57.3 + gauss() * .8 * n;
+      if (S.down) { const k = S.t - S.crashT; ax = k < .12 ? -8 + gauss() : gauss() * .02 * n; ay = k < .12 ? 3 : gauss() * .02 * n; gz = k < .12 ? 4 : gauss() * .01 * n; rl = k < .3 ? (k / .3) * 88 : 88 + gauss() * .5; }
+      if (S.t - S.dropT < .1) ax = 12 * (rnd() < .5 ? 1 : -1) * (.8 + .2 * rnd());
+      return { ax, ay, gz, rl };
+    }
+    function fire(S, s) {
+      if (s < 1 || S.t < S.cool[s]) return; S.cool[s] = S.t + 10; S.stat.al[s]++;
+      S.out.push({ k: 'warn', s, x: ['', 'Haptic pulse. Elevated risk.', 'Voice: "Reduce speed."', 'Voice: "Warning. Unstable riding detected."'][s], c: s > 1 ? 'rd' : 'am' });
+      if (s >= 2 && S.o.obey) { S.rs = S.t + 2.5; S.re = S.t + 27.5; }
+    }
+    function tick(S) {
+      const o = S.o; if (o.gps) { S.gps.v = Math.max(0, S.v + gauss() * .5); S.gps.age = 0; } else S.gps.age++; S.stat.deg = S.gps.age >= 5;
+      if (S.C.s !== 'idle' || S.down) return; const b = S.b; if (b.ax.length < 100) return;
+      const f = [sdv(b.ax), Math.max(0, -Math.min(...b.ax)), sdv(b.gz), sdv(b.rl), b.ay.reduce((p, c) => p + Math.abs(c), 0) / b.ay.length];
+      if (S.t < S.cal) { S.F.push(f); return; }
+      if (!S.mu) { const n = S.F.length; S.mu = f.map((_, i) => S.F.reduce((p, c) => p + c[i], 0) / n); S.sd = f.map((_, i) => Math.max(sdv(S.F.map(c => c[i])), .5 * S.mu[i] + .01)); S.out.push({ k: 'log', c: 'bl', x: `Baseline learned from ${n} s of calm riding. Monitoring started.` }); }
+      const z = f.map((x, i) => (x - S.mu[i]) / S.sd[i]), A = Math.sqrt(z.reduce((p, c) => p + Math.max(0, c) ** 2, 0) / z.length), an = 100 / (1 + Math.exp(-(A - 3.5)));
+      const kmh = S.gps.v * 3.6, ok = !S.stat.deg, sp = ok ? clamp((kmh - 60) / 40, 0, 1) * 100 : 0, mr = Math.max(...b.rl.map(Math.abs)), lt = clamp((mr - 25) / 25, 0, 1) * (ok ? clamp(kmh / 70, 0, 1) : 1) * 100;
+      S.raw = Math.min(100, .7 * an + .2 * sp + .1 * lt); S.drs += (S.raw > S.drs ? .5 : .15) * (S.raw - S.drs);
+      let s = S.st; while (s < 3 && S.drs >= T[s]) s++; while (s > 0 && S.drs < T[s - 1] - 5) s--;
+      if (s > S.st || s === 3) fire(S, s); S.st = s; S.stat.tm[s]++; S.mon++;
+    }
+    function crash(S, m) {
+      const C = S.C, mag = Math.hypot(m.ax, m.ay);
+      if (C.s === 'idle' && mag > 4 && S.t > C.lock) { C.s = 'verify'; C.t0 = S.t; C.pk = mag; C.mr = 0; C.still = 0; S.out.push({ k: 'log', c: 'am', x: `Impact candidate ${mag.toFixed(1)} g. Verifying orientation, stillness and GPS.` }); }
+      else if (C.s === 'verify') {
+        C.pk = Math.max(C.pk, mag); C.mr = Math.max(C.mr, Math.abs(m.rl));
+        C.still = (Math.abs(m.gz) < .3 && mag < .3 && S.t - C.t0 > .5) ? C.still + .02 : 0;
+        const gok = S.o.gps && S.gps.age < 3;
+        if (C.mr > 60 && C.still >= 2 && (!gok || S.gps.v < 2)) { C.s = 'count'; C.cd = 15; C.lastTick = 15; S.out.push({ k: 'log', c: 'rd', x: `Crash verified: ${C.pk.toFixed(1)} g, roll ${C.mr.toFixed(0)} deg, still 2 s, ${gok ? 'GPS speed near 0' : 'GPS unavailable'}. 15 s to cancel.` }); S.out.push({ k: 'cd' }); }
+        else if (S.t - C.t0 > 6) { C.s = 'idle'; C.lock = S.t + 10; S.stat.dis++; S.out.push({ k: 'log', c: 'gr', x: 'Impact dismissed: no orientation change or sustained stillness. No SOS.' }); }
+      }
+      else if (C.s === 'count') {
+        C.cd -= .02; const s = Math.ceil(C.cd); if (s < C.lastTick) { C.lastTick = s; S.out.push({ k: 'tick', s }); }
+        if (C.cd <= 0) {
+          C.s = 'sos'; C.net = -9; S.stat.sos++; const la = 20 + S.y / 111000, lo = 78 + S.x / 104300;
+          S.sos = { la, lo, sent: false, msg: `SOS from AeroGuard: probable crash, peak ${C.pk.toFixed(1)} g, rider not responding. Location ${la.toFixed(5)}, ${lo.toFixed(5)} https://maps.google.com/?q=${la.toFixed(5)},${lo.toFixed(5)}` };
+        }
+      }
+      else if (C.s === 'sos' && !S.sos.sent) { if (S.o.net) { S.sos.sent = true; S.out.push({ k: 'sos' }); } else if (S.t - C.net > 5) { C.net = S.t; S.out.push({ k: 'log', c: 'am', x: 'No phone network. SOS queued, retrying every 5 s.' }); } }
+    }
+    function cancel(S) { const C = S.C; if (C.s === 'count') { C.s = 'idle'; C.lock = S.t + 10; S.stat.fa++; S.out.push({ k: 'log', c: 'gr', x: 'Rider cancelled. Logged as false alarm. No SOS sent.' }); S.out.push({ k: 'cancel' }); } }
+    function step(S, dt) {
+      S.t += dt; S.n++; const p = prof(S);
+      if (!S.down) {
+        if (S.t >= S.ev.next) { const br = rnd() < .55; S.ev.a = (br ? -7 : 4) * p.ag * (.6 + .4 * rnd()); S.ev.until = S.t + .5 + .5 * rnd(); S.ev.next = S.t + (p.ag > .3 ? 3 + 3 * rnd() : 10 + 8 * rnd()); }
+        S.a = clamp(1.2 * (p.vT - S.v), -3, 2.5) + (S.t < S.ev.until ? S.ev.a : 0); S.v = Math.max(0, S.v + S.a * dt);
+        S.yr = p.wob * Math.sin(6.2832 * p.f * S.t) + gauss() * .01; S.roll = Math.atan(S.v * S.yr / G);
+        if (S.scn === 'crash' && S.t >= S.cal + 25) { S.down = true; S.crashT = S.t; }
+        if (S.scn === 'drop' && !S.dropDone && S.t >= S.cal + 25) { S.dropDone = true; S.dropT = S.t; }
+      }
+      else { S.v = Math.max(0, S.v - G * 8 * dt); S.a = 0; S.yr = 0; }
+      S.hd += S.yr * dt; S.x += S.v * Math.cos(S.hd) * dt; S.y += S.v * Math.sin(S.hd) * dt;
+      const m = imu(S); if (Math.hypot(m.ax, m.ay) <= 4) for (const k of ['ax', 'ay', 'gz', 'rl']) { const a = S.b[k]; a.push(m[k === 'rl' ? 'rl' : k]); if (a.length > 250) a.shift(); }
+      crash(S, m); if (S.n % 50 === 0) tick(S); return m;
+    }
+    //ENGINE_END
+    const $ = id => document.getElementById(id), O = { noise: 1, gps: true, net: true, obey: true }, NM = ['Normal', 'Elevated', 'High risk', 'Critical'], CL = ['#2fd5a6', '#ffb020', '#ff7a45', '#ff4d5e'];
+    const SC = [['calm', 'Calm commute'], ['aggro', 'Aggressive riding'], ['fatigue', 'Fatigue drift'], ['drop', 'Helmet drop (false alarm)'], ['crash', 'Crash']];
+    let S, run = true, spd = 2, AC = null, hist = [], path = [], fxU = 0, fxS = 0;
+    function reset(sc) { S = mk(sc, O); hist = []; path = []; $('log').innerHTML = ''; $('msg').textContent = ''; document.querySelectorAll('#sc button').forEach(b => b.classList.toggle('on', b.dataset.s === sc)); }
+    SC.forEach(([k, n]) => { const b = document.createElement('button'); b.textContent = n; b.dataset.s = k; b.onclick = () => { reset(k); run = true; $('pl').textContent = 'Pause'; audio(); }; $('sc').appendChild(b); });
+    function audio() { if (!AC && window.AudioContext) AC = new AudioContext(); }
+    function tone(f, d, v = .2, at = 0) { if (!$('sn').checked || !AC) return; const o = AC.createOscillator(), g = AC.createGain(), t = AC.currentTime + at; o.frequency.value = f; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + .01); g.gain.linearRampToValueAtTime(0, t + d); o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + d + .02); }
+    function say(t) { if ($('sn').checked && window.speechSynthesis) { speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance(t)); } }
+    function log(x, c) { const li = document.createElement('li'); li.className = c || ''; li.textContent = `[${S.t.toFixed(1)} s] ${x}`; $('log').prepend(li); while ($('log').children.length > 80) $('log').lastChild.remove(); }
+    function drain() {
+      while (S.out.length) {
+        const e = S.out.shift();
+        if (e.k === 'warn') { fxU = S.t + 2.5; fxS = e.s; if (e.s === 1) { tone(660, .15, .15); tone(660, .15, .15, .27); } else if (e.s === 2) { [0, .28, .56].forEach(a => tone(1000, .18, .2, a)); say('Reduce speed'); } else { for (let i = 0; i < 8; i++)tone(i % 2 ? 1200 : 800, .25, .22, i * .25); say('Warning. Unstable riding detected.'); } log(`DRS ${Math.round(S.drs)}. ${e.x}`, e.c); }
+        else if (e.k === 'log') log(e.x, e.c); else if (e.k === 'cd') say('Crash detected. Cancelling in fifteen seconds.'); else if (e.k === 'tick') tone(1500, .05, .2);
+        else if (e.k === 'sos') { [523, 659, 784].forEach((f, i) => tone(f, .15, .2, i * .15)); tone(1047, .35, .2, .45); log('SOS sent to 2 emergency contacts with live location.', 'rd'); }
+        else if (e.k === 'cancel') { tone(880, .15, .2); tone(660, .25, .2, .2); }
+      }
+    }
+    function gauge() {
+      const c = $('g'), x = c.getContext('2d'), w = c.width, h = c.height, cx = w / 2, cy = h * .82, r = w * .36, d = S.drs; x.clearRect(0, 0, w, h); x.lineWidth = 22;
+      [[0, 30], [30, 60], [60, 85], [85, 100]].forEach(([a, b], i) => { x.strokeStyle = CL[i]; x.globalAlpha = .25; x.beginPath(); x.arc(cx, cy, r, Math.PI * (1 + a / 100), Math.PI * (1 + b / 100)); x.stroke(); if (d > a) { x.globalAlpha = 1; x.beginPath(); x.arc(cx, cy, r, Math.PI * (1 + a / 100), Math.PI * (1 + Math.min(b, d) / 100)); x.stroke(); } });
+      x.globalAlpha = 1; const an = Math.PI * (1 + d / 100); x.strokeStyle = '#e8eef5'; x.lineWidth = 5; x.beginPath(); x.moveTo(cx, cy); x.lineTo(cx + (r - 30) * Math.cos(an), cy + (r - 30) * Math.sin(an)); x.stroke();
+      x.fillStyle = '#e8eef5'; x.font = 'bold 64px ui-monospace,monospace'; x.textAlign = 'center'; x.fillText(Math.round(d), cx, cy - 8);
+    }
+    function strip(id, ser, mn, mx, bands, mark) {
+      const c = $(id), x = c.getContext('2d'), w = c.width, h = c.height, Y = v => h - (clamp(v, mn, mx) - mn) / (mx - mn) * h, X = i => w - (hist.length - 1 - i) / 599 * w; x.clearRect(0, 0, w, h);
+      (bands || []).forEach(b => { x.strokeStyle = '#2a3646'; x.beginPath(); x.moveTo(0, Y(b)); x.lineTo(w, Y(b)); x.stroke(); });
+      if (mark) hist.forEach((p, i) => { if (p.w) { x.strokeStyle = CL[p.w]; x.beginPath(); x.moveTo(X(i), 0); x.lineTo(X(i), h); x.stroke(); } });
+      ser.forEach(([k, col]) => { x.beginPath(); hist.forEach((p, i) => i ? x.lineTo(X(i), Y(p[k])) : x.moveTo(X(i), Y(p[k]))); x.strokeStyle = col; x.lineWidth = 1.8; x.stroke(); });
+    }
+    function map() {
+      const c = $('mp'), x = c.getContext('2d'), w = c.width, h = c.height; x.clearRect(0, 0, w, h); if (path.length < 2) return;
+      const xs = path.map(p => p[0]), ys = path.map(p => p[1]), x0 = Math.min(...xs), y0 = Math.min(...ys), k = Math.min((w - 40) / Math.max(50, Math.max(...xs) - x0), (h - 40) / Math.max(50, Math.max(...ys) - y0));
+      x.strokeStyle = '#3dd6f5'; x.lineWidth = 3; x.beginPath(); path.forEach((p, i) => { const a = 20 + (p[0] - x0) * k, b = h - 20 - (p[1] - y0) * k; i ? x.lineTo(a, b) : x.moveTo(a, b); }); x.stroke();
+      const l = path[path.length - 1]; x.fillStyle = S.down ? '#ff4d5e' : '#2fd5a6'; x.beginPath(); x.arc(20 + (l[0] - x0) * k, h - 20 - (l[1] - y0) * k, 8, 0, 7); x.fill();
+    }
+    function ui() {
+      const C = S.C, st = S.st, cal = S.t < S.cal; gauge();
+      $('st').textContent = cal ? 'Calibrating' : (C.s === 'count' || C.s === 'sos') ? 'Crash mode' : NM[st]; $('st').style.color = cal ? '#8da0b5' : CL[st];
+      $('ph').textContent = cal ? `Learning baseline ${Math.floor(S.t)}/${S.cal} s` : S.stat.deg ? 'GPS lost: speed term disabled' : `t = ${S.t.toFixed(0)} s, ${(S.gps.v * 3.6).toFixed(0)} km/h`;
+      const act = C.s === 'count' || C.s === 'sos', blink = Math.floor(S.t * 4) % 2 === 0;
+      ['l1', 'l2', 'l3'].forEach((id, i) => { const on = act ? (i === 2 && blink) : !cal && i === (st >= 2 ? 2 : st >= 1 ? 1 : 0) && (st < 3 || blink); $(id).style.background = on ? [CL[0], CL[1], CL[3]][i] : '#25303d'; $(id).style.boxShadow = on ? `0 0 14px ${[CL[0], CL[1], CL[3]][i]}` : 'none'; });
+      $('oled').textContent = act ? `CRASH ${C.s === 'count' ? Math.ceil(C.cd) : 'SOS'}` : cal ? 'CALIBRATING' : `DRS ${Math.round(S.drs)} ${NM[st]}`;
+      const h = $('hap'); if (S.t < fxU) { h.textContent = ['', 'Haptic pulse on helmet', 'Voice: Reduce speed', 'Voice: Unstable riding'][fxS]; h.style.background = CL[fxS]; h.style.color = '#06121a'; } else { h.textContent = 'Helmet feedback idle'; h.style.background = '#1f2a37'; h.style.color = '#8da0b5'; }
+      $('ss').textContent = { idle: 'Monitoring. No impact detected.', verify: 'Impact seen. Verifying with orientation, stillness and GPS.', count: 'Probable crash. Cancel now or SOS will be sent.', sos: S.sos && S.sos.sent ? 'SOS sent to emergency contacts.' : 'SOS queued. Waiting for phone network.' }[C.s];
+      $('cd').textContent = C.s === 'count' ? Math.ceil(C.cd) : ''; $('ok').disabled = C.s !== 'count'; if (S.sos) $('msg').textContent = S.sos.msg;
+      const tot = S.stat.al[1] + S.stat.al[2] + S.stat.al[3], tm = S.stat.tm.reduce((a, b) => a + b, 0) || 1;
+      $('mt').innerHTML = [['Alerts (L1/L2/L3)', S.stat.al.slice(1).join(' / ')], ['Alerts per ride hour', S.mon > 30 ? (tot / (S.mon / 3600)).toFixed(0) : '-'], ['Time in risk states', (100 - S.stat.tm[0] / tm * 100).toFixed(0) + '%'], ['Impacts dismissed / cancelled / SOS', `${S.stat.dis} / ${S.stat.fa} / ${S.stat.sos}`]].map(([a, b]) => `<div><b class="num">${b}</b><span>${a}</span></div>`).join('');
+      strip('c1', [['v', '#3dd6f5']], 0, 120, [30, 60, 90]); strip('c2', [['ax', '#3dd6f5'], ['ay', '#ffb020']], -1.2, 1.2, [0]); strip('c3', [['drs', '#e8eef5']], 0, 100, T, 1); map();
+    }
+    let last = performance.now();
+    function loop(now) {
+      const dt = Math.min(.1, (now - last) / 1000); last = now;
+      if (run) {
+        const n = Math.round(spd * dt / .02); for (let i = 0; i < n; i++) {
+          const t0 = S.t; step(S, .02); if (S.n % 5 === 0) { hist.push({ v: S.v * 3.6, ax: S.a / G, ay: S.v * S.yr / G, drs: S.drs, w: 0 }); if (hist.length > 600) hist.shift(); }
+          if (S.n % 25 === 0) path.push([S.x, S.y]);
+        }
+        for (const e of S.out) if (e.k === 'warn' && hist.length) hist[hist.length - 1].w = e.s; drain();
+      }
+      ui(); requestAnimationFrame(loop);
+    }
+    $('pl').onclick = () => { run = !run; $('pl').textContent = run ? 'Pause' : 'Resume'; };
+    $('rs').onclick = () => { reset(S.scn); run = true; $('pl').textContent = 'Pause'; };
+    $('sp').onchange = e => spd = +e.target.value; $('nz').oninput = e => O.noise = +e.target.value;
+    $('ob').onchange = e => O.obey = e.target.checked; $('gp').onchange = e => O.gps = e.target.checked; $('nt').onchange = e => O.net = e.target.checked;
+    $('ok').onclick = () => { cancel(S); drain(); };
+    reset('calm'); requestAnimationFrame(loop);
+  </script>
+</body>
+
+</html>
