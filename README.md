@@ -5,7 +5,7 @@
 **Edge-intelligent preventive motorcycle safety, simulated end to end in your browser.**
 Virtual rider, helmet sensors, on-device risk engine, multi-modal warnings and a verified post-crash SOS workflow.
 
-[![Tests](https://github.com/<your-username>/aeroguard-sim/actions/workflows/test.yml/badge.svg)](https://github.com/<your-username>/aeroguard-sim/actions)
+
 ![License](https://img.shields.io/badge/license-MIT-3dd6f5)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-2fd5a6)
 ![Stack](https://img.shields.io/badge/stack-vanilla%20JS%20%2B%20Canvas%20%2B%20Web%20Audio-ffb020)
